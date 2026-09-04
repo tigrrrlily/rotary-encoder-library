@@ -57,101 +57,97 @@
  * Another advantage is the ability to properly handle bad state, such
  * as due to EMI, etc.
  * It is also a lot simpler than others - a static state table and less
- * than 10 lines of logic.
+ * than 10 lines of logic. (haha, well that's no longer true --Summer)
  */
 
 #include "Arduino.h"
-#include "Rotary.h"
+#include "Encoders.h"
+#include "Steps.h"
 
-/*
- * The below state table has, for each state (row), the new state
- * to set based on the next encoder output. From left to right in,
- * the table, the encoder outputs are 00, 01, 10, 11, and the value
- * in that position is the new state to set.
- */
+#define NO_OPTIONS 0x0
 
 
-#ifdef HALF_STEP
-// Use the half-step state table (emits a code at 00 and 11)
-#define R_START_H 0x0
-#define R_CCW_BEGIN_H 0x1
-#define R_CW_BEGIN_H 0x2
-#define R_START_M 0x3
-#define R_CW_BEGIN_M 0x4
-#define R_CCW_BEGIN_M 0x5
-#define R_FAULT_H 0x6
-#define R_START R_START_H
-
-const unsigned char ttable[7][4] = {
-    // R_START_H
-    {R_START_H, R_CW_BEGIN_H, R_CCW_BEGIN_H, R_START_M},
-    // R_CCW_BEGIN_H
-    {R_START_H, R_FAULT_H, R_CCW_BEGIN_H, R_START_M | DIR_CCW},
-    // R_CW_BEGIN_H
-    {R_START_H, R_CW_BEGIN_H, R_FAULT_H, R_START_M | DIR_CW},
-    // R_START_M (11)
-    {R_START_H, R_CCW_BEGIN_M, R_CW_BEGIN_M, R_START_M},
-    // R_CW_BEGIN_M
-    {R_START_H | DIR_CW, R_FAULT_H, R_CW_BEGIN_M, R_START_M},
-    // R_CCW_BEGIN_M
-    {R_START_H | DIR_CCW, R_CCW_BEGIN_M, R_FAULT_H, R_START_M},
-    // R_FAULT_H
-    {R_START_H, R_FAULT_H, R_FAULT_H, R_START_M}}
-
-#else
-// Use the full-step state table (emits a code at 00 only)
-
-#define R_START 0x0
-#define R_CW_FINAL 0x1
-#define R_CW_BEGIN 0x2
-#define R_CW_NEXT 0x3
-#define R_CCW_BEGIN 0x4
-#define R_CCW_FINAL 0x5
-#define R_CCW_NEXT 0x6
-#define R_FAULT 0x7
-
-const unsigned char ttable[8][4] = {
-    // R_START
-    {R_START, R_CW_BEGIN, R_CCW_BEGIN, R_FAULT},
-    // R_CW_FINAL
-    {R_START | DIR_CW, R_FAULT, R_CW_FINAL, R_CW_NEXT},
-    // R_CW_BEGIN
-    {R_START, R_CW_BEGIN, R_FAULT, R_CW_NEXT},
-    // R_CW_NEXT
-    {R_START, R_CW_BEGIN, R_CW_FINAL, R_CW_NEXT},
-    // R_CCW_BEGIN
-    {R_START, R_FAULT, R_CCW_BEGIN, R_CCW_NEXT},
-    // R_CCW_FINAL
-    {R_START | DIR_CCW, R_CCW_FINAL, R_FAULT, R_CCW_NEXT},
-    // R_CCW_NEXT
-    {R_START, R_CCW_FINAL, R_CCW_BEGIN, R_CCW_NEXT},
-    // R_FAULT
-    {R_START, R_FAULT, R_FAULT, R_FAULT}};
-#endif
-
-/*
- * Constructor. Each arg is the pin number for each encoder contact.
- */
-Rotary::Rotary(char _pin1, char _pin2) {
-  // Assign variables.
-  pin1 = _pin1;
-  pin2 = _pin2;
+// Constructor. Only called from sub-classes.
+Rotary::Rotary(char _pin1, char _pin2, char _options) : pin1(_pin1), pin2(_pin2), options(_options)
+{
   // Set pins to input.
-  pinMode(pin1, INPUT);
-  pinMode(pin2, INPUT);
-#ifdef ENABLE_PULLUPS
-  digitalWrite(pin1, HIGH);
-  digitalWrite(pin2, HIGH);
-#endif
+  pinMode(pin1, (options && PULLUPS) ? (INPUT_PULLUP) : (INPUT));
+  pinMode(pin2, (options && PULLUPS) ? (INPUT_PULLUP) : (INPUT));
   // Initialise state.
   state = R_START;
+  resetPos();
+  faultCounter = 0;
 }
 
-unsigned char Rotary::process() {
+Rotary::Rotary(char _pin1, char _pin2) : Rotary(_pin1, _pin2, NO_OPTIONS) {} // no reverse, no step on high, no pullups
+
+void Rotary::process()
+{
   // Grab state of input pins.
-  unsigned char pinstate = (digitalRead(pin2) << 1) | digitalRead(pin1);
-  // Determine new state from the pins and state table.
-  state = ttable[state & 0xf][pinstate];
-  // Return emit bits, ie the generated event.
-  return state & 0x30;
+  unsigned char pinState;
+  switch (options && (REVERSE_DIR || HIGH_STEP))
+  {
+  case (REVERSE_DIR || HIGH_STEP):
+    pinState = ((!digitalRead(pin1)) << 1) | (!digitalRead(pin2));
+    break;
+  case (REVERSE_DIR):
+    pinState = (digitalRead(pin2) << 1) | digitalRead(pin1);
+    break;
+  case (HIGH_STEP):
+    pinState = ((!digitalRead(pin2)) << 1) | (!digitalRead(pin1));
+    break;
+  default:
+    pinState = (digitalRead(pin1) << 1) | digitalRead(pin2);
+  }
+  
+  // State machine step! Determine new state from the current state, the pins and the state table.
+  state = ttable[state & 0xf][pinState];
+
+  switch (state & 0x30) // only want the direction message that's been stored in the higher bits
+  {
+  case DIR_CCW:
+    if (posDiff != INT8_MIN)
+    {
+      posDiff--;
+      posChanged = true;
+    }
+    break;
+  case DIR_CW:
+    if (posDiff != INT8_MAX)
+    {
+      posDiff++;
+      posChanged = true;
+    }
+    break;
+  case DIR_FAULT:
+    if (faultCounter != UINT16_MAX)
+      faultCounter++;
+  }
+}
+
+bool Rotary::hasPosChanged()
+{
+  return posChanged;
+}
+void Rotary::resetPos()
+{
+  noInterrupts();
+  {
+    posDiff = 0;
+    posChanged = false;
+  }
+  interrupts();
+}
+
+signed char Rotary::readPos()
+{
+  signed char copy;
+  noInterrupts();
+  {
+    copy = posDiff;
+    posDiff = 0;
+    posChanged = false;
+  }
+  interrupts();
+  return copy;
 }
