@@ -29,3 +29,8 @@ const unsigned char FSRotary::ttable[][4] = {
     {R_START_F | DIR_FAULT, R_CCW_FINAL_F,         R_CCW_BEGIN_F,         R_CCW_NEXT_F},
     // R_FAULT_F
     {R_START_F,             R_FAULT_F,             R_FAULT_F,             R_FAULT_F}};
+
+
+const unsigned char (*FSRotary::getTable())[4]{
+    return ttable;
+}

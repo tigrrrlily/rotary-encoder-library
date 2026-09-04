@@ -69,13 +69,12 @@
 
 #define NO_OPTIONS 0x0
 
-
 // Constructor. Only called from sub-classes.
 Rotary::Rotary(char _pin1, char _pin2, char _options) : pin1(_pin1), pin2(_pin2), options(_options)
 {
   // Set pins to input.
-  pinMode(pin1, (options && PULLUPS) ? (INPUT_PULLUP) : (INPUT));
-  pinMode(pin2, (options && PULLUPS) ? (INPUT_PULLUP) : (INPUT));
+  pinMode(pin1, (options & PULLUPS) ? (INPUT_PULLUP) : (INPUT));
+  pinMode(pin2, (options & PULLUPS) ? (INPUT_PULLUP) : (INPUT));
   // Initialise state.
   state = R_START;
   resetPos();
@@ -84,27 +83,35 @@ Rotary::Rotary(char _pin1, char _pin2, char _options) : pin1(_pin1), pin2(_pin2)
 
 Rotary::Rotary(char _pin1, char _pin2) : Rotary(_pin1, _pin2, NO_OPTIONS) {} // no reverse, no step on high, no pullups
 
+// const unsigned char (*Rotary::getTable())[4]{
+//   return ttable;
+//  }
+
 void Rotary::process()
 {
   // Grab state of input pins.
   unsigned char pinState;
-  switch (options && (REVERSE_DIR || HIGH_STEP))
+  const unsigned char (*stateMachine)[4] = getTable();
+  switch (options & (REVERSE_DIR | HIGH_STEP))
   {
-  case (REVERSE_DIR || HIGH_STEP):
+  case (REVERSE_DIR | HIGH_STEP):
     pinState = ((!digitalRead(pin1)) << 1) | (!digitalRead(pin2));
     break;
   case (REVERSE_DIR):
+
     pinState = (digitalRead(pin2) << 1) | digitalRead(pin1);
     break;
   case (HIGH_STEP):
+
     pinState = ((!digitalRead(pin2)) << 1) | (!digitalRead(pin1));
     break;
   default:
+
     pinState = (digitalRead(pin1) << 1) | digitalRead(pin2);
   }
-  
+  // Serial.println(itoa(pinState, output, 2));
   // State machine step! Determine new state from the current state, the pins and the state table.
-  state = ttable[state & 0xf][pinState];
+  state = stateMachine[state & 0xf][pinState];
 
   switch (state & 0x30) // only want the direction message that's been stored in the higher bits
   {
@@ -113,6 +120,7 @@ void Rotary::process()
     {
       posDiff--;
       posChanged = true;
+      Serial.println("Counter-clockwise!");
     }
     break;
   case DIR_CW:
@@ -120,11 +128,15 @@ void Rotary::process()
     {
       posDiff++;
       posChanged = true;
+
+      Serial.println("Clockwise!");
     }
     break;
   case DIR_FAULT:
     if (faultCounter != UINT16_MAX)
       faultCounter++;
+
+    Serial.println("Fault!");
   }
 }
 

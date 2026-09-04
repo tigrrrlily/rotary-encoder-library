@@ -13,16 +13,20 @@
 
 const unsigned char HSRotary::ttable[][4] = {
     // R_START_H
-    {R_START_H,           R_CW_BEGIN_H,    R_CCW_BEGIN_H,  R_START_M_H},
+    {R_START_H,             R_CW_BEGIN_H,          R_CCW_BEGIN_H,         R_START_M_H | DIR_FAULT},
     // R_CCW_BEGIN_H
-    {R_START_H,           R_FAULT_H,       R_CCW_BEGIN_H,  R_START_M_H | DIR_CCW},
+    {R_START_H,             R_FAULT_H | DIR_FAULT, R_CCW_BEGIN_H,         R_START_M_H | DIR_CCW},
     // R_CW_BEGIN_H
-    {R_START_H,           R_CW_BEGIN_H,    R_FAULT_H,      R_START_M_H | DIR_CW},
+    {R_START_H,             R_CW_BEGIN_H,          R_FAULT_H | DIR_FAULT, R_START_M_H | DIR_CW},
     // R_START_M_H (11)
-    {R_START_H,           R_CCW_BEGIN_M_H, R_CW_BEGIN_M_H, R_START_M_H},
+    {R_START_H | DIR_FAULT, R_CCW_BEGIN_M_H,       R_CW_BEGIN_M_H,        R_START_M_H},
     // R_CW_BEGIN_M_H
-    {R_START_H | DIR_CW,  R_FAULT_H,       R_CW_BEGIN_M_H, R_START_M_H},
+    {R_START_H | DIR_CW,    R_FAULT_H | DIR_FAULT, R_CW_BEGIN_M_H,        R_START_M_H},
     // R_CCW_BEGIN_M_H
-    {R_START_H | DIR_CCW, R_CCW_BEGIN_M_H, R_FAULT_H,      R_START_M_H},
+    {R_START_H | DIR_CCW,   R_CCW_BEGIN_M_H,       R_FAULT_H | DIR_FAULT, R_START_M_H},
     // R_FAULT_H
-    {R_START_H,           R_FAULT_H,       R_FAULT_H,      R_START_M_H}};
+    {R_START_H,             R_FAULT_H,             R_FAULT_H,             R_START_M_H}};
+
+const unsigned char (*HSRotary::getTable())[4]{
+    return ttable;
+}    
