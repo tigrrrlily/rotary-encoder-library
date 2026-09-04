@@ -12,6 +12,8 @@
 class Rotary
 {
 public:
+  Rotary(char _pin1, char _pin2);
+  Rotary(char, char, char options);
   void process();        // turn pin state into sum of encoder steps. May be called from ISR.
   bool hasPosChanged();  // flag for presence of new steps collected
   signed char readPos(); // returns and zeros out step count
@@ -22,8 +24,6 @@ public:
   const char options;
 
 protected:
-  Rotary(char _pin1, char _pin2);
-  Rotary(char, char, char options);
 
   unsigned char state; // state machine internal state, only ever accessed from method process()
 
@@ -31,19 +31,16 @@ protected:
   volatile bool posChanged;     // has encoder stepped since last read/reset
   volatile signed char posDiff; // relative position of encoder since last read/reset, clockwise is positive
 
-  volatile unsigned int faultCounter; // for future use
+  volatile unsigned int faultCounter; // nothing uses the functionality yet
 
 private:
   virtual const unsigned char (*getTable())[4] = 0;
-  const static unsigned char (*ttable)[4]; // placeholder for FSRotary.ttable[][] and HSRotary.ttable[][]
 };
 
 class HSRotary : public Rotary // Half-stepping rotary encoder, emits codes at 00 and 11.
 {
 public:
-  HSRotary(char _pin1, char _pin2) : Rotary(_pin1, _pin2) {}
-  HSRotary(char _pin1, char _pin2, char _options) : Rotary(_pin1, _pin2, _options) {}
-
+using Rotary::Rotary;
 protected:
   const unsigned char (*getTable())[4];
   static const unsigned char ttable[][4];
@@ -52,9 +49,7 @@ protected:
 class FSRotary : public Rotary // Full-stepping rotary encoder, emits codes at 00 only.
 {
 public:
-  FSRotary(char _pin1, char _pin2) : Rotary(_pin1, _pin2) {}
-  FSRotary(char _pin1, char _pin2, char _options) : Rotary(_pin1, _pin2, _options) {}
-
+using Rotary::Rotary;
 protected:
   const unsigned char (*getTable())[4];
   static const unsigned char ttable[][4];

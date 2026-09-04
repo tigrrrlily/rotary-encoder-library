@@ -83,9 +83,6 @@ Rotary::Rotary(char _pin1, char _pin2, char _options) : pin1(_pin1), pin2(_pin2)
 
 Rotary::Rotary(char _pin1, char _pin2) : Rotary(_pin1, _pin2, NO_OPTIONS) {} // no reverse, no step on high, no pullups
 
-// const unsigned char (*Rotary::getTable())[4]{
-//   return ttable;
-//  }
 
 void Rotary::process()
 {
@@ -98,29 +95,24 @@ void Rotary::process()
     pinState = ((!digitalRead(pin1)) << 1) | (!digitalRead(pin2));
     break;
   case (REVERSE_DIR):
-
     pinState = (digitalRead(pin2) << 1) | digitalRead(pin1);
     break;
   case (HIGH_STEP):
-
     pinState = ((!digitalRead(pin2)) << 1) | (!digitalRead(pin1));
     break;
   default:
-
     pinState = (digitalRead(pin1) << 1) | digitalRead(pin2);
   }
-  // Serial.println(itoa(pinState, output, 2));
-  // State machine step! Determine new state from the current state, the pins and the state table.
+
   state = stateMachine[state & 0xf][pinState];
 
-  switch (state & 0x30) // only want the direction message that's been stored in the higher bits
+  switch (state & 0x30) // only want the direction message from bits 5 and 6
   {
   case DIR_CCW:
     if (posDiff != INT8_MIN)
     {
       posDiff--;
       posChanged = true;
-      Serial.println("Counter-clockwise!");
     }
     break;
   case DIR_CW:
@@ -128,15 +120,11 @@ void Rotary::process()
     {
       posDiff++;
       posChanged = true;
-
-      Serial.println("Clockwise!");
     }
     break;
   case DIR_FAULT:
     if (faultCounter != UINT16_MAX)
       faultCounter++;
-
-    Serial.println("Fault!");
   }
 }
 
@@ -144,6 +132,7 @@ bool Rotary::hasPosChanged()
 {
   return posChanged;
 }
+
 void Rotary::resetPos()
 {
   noInterrupts();
