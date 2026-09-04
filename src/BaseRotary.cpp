@@ -3,6 +3,9 @@
  * Copyright 2011 Ben Buxton. Licenced under the GNU GPL Version 3.
  * Contact: bb@cactii.net
  *
+ * Re-structured and modified 2026 Summer Kline
+ * Contact: tigrrrlily@gmail.com
+ *
  * A typical mechanical rotary encoder emits a two bit gray code
  * on 3 output pins. Every step in the output (often accompanied
  * by a physical 'click') generates a specific sequence of output
