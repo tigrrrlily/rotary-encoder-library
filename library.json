@@ -1,6 +1,6 @@
 {
   "name": "Rotary encoder library",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A library for working with rotary encoders based on a state machine based on code by Ben Buxton",
   "keywords": "rotary, encoder, state machine, library",
   "repository":
