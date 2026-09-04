@@ -1,7 +1,8 @@
-"name": “Rotary encoder library”,
+{
+  "name": "Rotary encoder library",
   "version": "1.0.0",
-  "description": “A library for working with rotary encoders based on a state machine based on code by Ben Buxton”,
-  "keywords": “rotary, encoder, state machine, library”,
+  "description": "A library for working with rotary encoders based on a state machine based on code by Ben Buxton",
+  "keywords": "rotary, encoder, state machine, library",
   "repository":
   {
     "type": "git",
@@ -10,17 +11,17 @@
   "authors":
   [
     {
-      "name": “Summer Kline,
-      "email": “tigrrrlily@gmail.com,
-      “maintainer”: true
+      "name": "Summer Kline",
+      "email": "tigrrrlily@gmail.com",
+      "maintainer": true
     },
     {
-      "name": "Ben Buxton"
-      "email": “bb@cactii.net”,
-      “maintainer”: false
+      "name": "Ben Buxton",
+      "email": "bb@cactii.net",
+      "maintainer": false
     }
   ],
   "license": "GPL-3.0",
-  "frameworks": “arduino”,
+  "frameworks": "arduino",
   "platforms": "*"
 }
