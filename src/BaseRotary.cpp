@@ -63,7 +63,7 @@
  * than 10 lines of logic. (haha, well that's no longer true --Summer)
  */
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "Encoders.h"
 #include "Steps.h"
 
