@@ -70,54 +70,63 @@
  * in that position is the new state to set.
  */
 
-#define R_START 0x0
 
 #ifdef HALF_STEP
 // Use the half-step state table (emits a code at 00 and 11)
-#define R_CCW_BEGIN 0x1
-#define R_CW_BEGIN 0x2
+#define R_START_H 0x0
+#define R_CCW_BEGIN_H 0x1
+#define R_CW_BEGIN_H 0x2
 #define R_START_M 0x3
 #define R_CW_BEGIN_M 0x4
 #define R_CCW_BEGIN_M 0x5
-const unsigned char ttable[6][4] = {
-  // R_START (00)
-  {R_START_M,            R_CW_BEGIN,     R_CCW_BEGIN,  R_START},
-  // R_CCW_BEGIN
-  {R_START_M | DIR_CCW, R_START,        R_CCW_BEGIN,  R_START},
-  // R_CW_BEGIN
-  {R_START_M | DIR_CW,  R_CW_BEGIN,     R_START,      R_START},
-  // R_START_M (11)
-  {R_START_M,            R_CCW_BEGIN_M,  R_CW_BEGIN_M, R_START},
-  // R_CW_BEGIN_M
-  {R_START_M,            R_START_M,      R_CW_BEGIN_M, R_START | DIR_CW},
-  // R_CCW_BEGIN_M
-  {R_START_M,            R_CCW_BEGIN_M,  R_START_M,    R_START | DIR_CCW},
-};
+#define R_FAULT_H 0x6
+#define R_START R_START_H
+
+const unsigned char ttable[7][4] = {
+    // R_START_H
+    {R_START_H, R_CW_BEGIN_H, R_CCW_BEGIN_H, R_START_M},
+    // R_CCW_BEGIN_H
+    {R_START_H, R_FAULT_H, R_CCW_BEGIN_H, R_START_M | DIR_CCW},
+    // R_CW_BEGIN_H
+    {R_START_H, R_CW_BEGIN_H, R_FAULT_H, R_START_M | DIR_CW},
+    // R_START_M (11)
+    {R_START_H, R_CCW_BEGIN_M, R_CW_BEGIN_M, R_START_M},
+    // R_CW_BEGIN_M
+    {R_START_H | DIR_CW, R_FAULT_H, R_CW_BEGIN_M, R_START_M},
+    // R_CCW_BEGIN_M
+    {R_START_H | DIR_CCW, R_CCW_BEGIN_M, R_FAULT_H, R_START_M},
+    // R_FAULT_H
+    {R_START_H, R_FAULT_H, R_FAULT_H, R_START_M}}
+
 #else
 // Use the full-step state table (emits a code at 00 only)
+
+#define R_START 0x0
 #define R_CW_FINAL 0x1
 #define R_CW_BEGIN 0x2
 #define R_CW_NEXT 0x3
 #define R_CCW_BEGIN 0x4
 #define R_CCW_FINAL 0x5
 #define R_CCW_NEXT 0x6
+#define R_FAULT 0x7
 
-const unsigned char ttable[7][4] = {
-  // R_START
-  {R_START,    R_CW_BEGIN,  R_CCW_BEGIN, R_START},
-  // R_CW_FINAL
-  {R_CW_NEXT,  R_START,     R_CW_FINAL,  R_START | DIR_CW},
-  // R_CW_BEGIN
-  {R_CW_NEXT,  R_CW_BEGIN,  R_START,     R_START},
-  // R_CW_NEXT
-  {R_CW_NEXT,  R_CW_BEGIN,  R_CW_FINAL,  R_START},
-  // R_CCW_BEGIN
-  {R_CCW_NEXT, R_START,     R_CCW_BEGIN, R_START},
-  // R_CCW_FINAL
-  {R_CCW_NEXT, R_CCW_FINAL, R_START,     R_START | DIR_CCW},
-  // R_CCW_NEXT
-  {R_CCW_NEXT, R_CCW_FINAL, R_CCW_BEGIN, R_START},
-};
+const unsigned char ttable[8][4] = {
+    // R_START
+    {R_START, R_CW_BEGIN, R_CCW_BEGIN, R_FAULT},
+    // R_CW_FINAL
+    {R_START | DIR_CW, R_FAULT, R_CW_FINAL, R_CW_NEXT},
+    // R_CW_BEGIN
+    {R_START, R_CW_BEGIN, R_FAULT, R_CW_NEXT},
+    // R_CW_NEXT
+    {R_START, R_CW_BEGIN, R_CW_FINAL, R_CW_NEXT},
+    // R_CCW_BEGIN
+    {R_START, R_FAULT, R_CCW_BEGIN, R_CCW_NEXT},
+    // R_CCW_FINAL
+    {R_START | DIR_CCW, R_CCW_FINAL, R_FAULT, R_CCW_NEXT},
+    // R_CCW_NEXT
+    {R_START, R_CCW_FINAL, R_CCW_BEGIN, R_CCW_NEXT},
+    // R_FAULT
+    {R_START, R_FAULT, R_FAULT, R_FAULT}};
 #endif
 
 /*
