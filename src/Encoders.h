@@ -1,7 +1,7 @@
 #ifndef encoders_h
 #define encoders_h
 
-// Modifiers, "||" the ones you want together and pass as third argument of constructor
+// Modifiers, "|" the ones you want together and pass as third argument of constructor
 #define PULLUPS 0x1     // Enable internal pull-ups on input pins
 #define HIGH_STEP 0x2   // If the encoder's detents correspond with 11 instead of 00
 #define REVERSE_DIR 0x4 // Reverses the two pins, swapping clockwise and counter-clockwise steps
